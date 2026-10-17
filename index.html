@@ -26,7 +26,7 @@
             if (k === 'withSuccessHandler') return fn => { ok = fn; return p; };
             if (k === 'withFailureHandler') return fn => { fail = fn; return p; };
             return (...args) => {
-              if (!window.EXEC_URL || /ใส่ลิงก์/.test(window.EXEC_URL)) { fail(new Error('ยังไม่ได้ใส่ลิงก์เว็บแอปในไฟล์ config.js')); return; }
+              if (!window.EXEC_URL || /ใส่ลิงก์/.test(window.EXEC_URL) || (window.EXEC_URL.match(/script\.google\.com/g) || []).length !== 1) { fail(new Error('ลิงก์ในไฟล์ config.js ไม่ถูกต้อง (ยังไม่ได้ใส่ หรือวางซ้ำ) ต้องเป็น https://script.google.com/macros/s/....../exec')); return; }
               if (!navigator.onLine) { fail(new Error('ไม่มีอินเทอร์เน็ต กรุณาเชื่อมต่อแล้วกดรีเฟรช')); return; }
               fetch(window.EXEC_URL, { method: 'POST', redirect: 'follow', body: JSON.stringify(ACTIONS[k](...args)),
                                        headers: { 'Content-Type': 'text/plain;charset=utf-8' } })
@@ -35,7 +35,9 @@
                   let j; try { j = JSON.parse(t); } catch (e) { throw new Error('ได้หน้าเว็บกลับมาแทนข้อมูล - ตรวจว่า Deploy แบบ "ทุกคน" และลิงก์ลงท้าย /exec'); }
                   if (j.ok) ok(j.data); else fail(new Error(j.error));
                 })
-                .catch(e => fail(e));
+                .catch(e => fail(/Failed to fetch|Load failed|NetworkError/i.test(String(e && e.message)) && navigator.onLine
+                  ? new Error('ติดต่อ Apps Script ไม่ได้ - ตรวจ (1) ลิงก์ใน config.js ถูกต้อง ขึ้นต้น https://script.google.com/macros/s/ เพียงครั้งเดียว และลงท้าย /exec (2) Deploy เวอร์ชันใหม่ที่มี doPost แล้ว (3) ผู้มีสิทธิ์เข้าถึง = ทุกคน')
+                  : e));
             };
           } });
           return p;
