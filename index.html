@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Premium Lab ผู้บริหาร</title>
+  <meta name="theme-color" content="#6f42c1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Premium Lab">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    html, body { margin:0; height:100%; background:#f6f4fa; font-family:-apple-system, 'Kanit', sans-serif; }
+    body { padding-top:env(safe-area-inset-top); box-sizing:border-box; background:linear-gradient(180deg,#6f42c1 0, #6f42c1 env(safe-area-inset-top), #f6f4fa env(safe-area-inset-top)); }
+    #app { position:fixed; left:0; right:0; bottom:0; top:env(safe-area-inset-top); width:100%; height:calc(100% - env(safe-area-inset-top)); border:0; background:#f6f4fa; }
+    #splash { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; background:linear-gradient(160deg,#7c4dd6,#46268a); color:#fff; z-index:2; transition:opacity .4s; }
+    #splash img { width:110px; height:110px; border-radius:26px; box-shadow:0 10px 30px rgba(0,0,0,.3); }
+    #splash .t { font-size:17px; opacity:.9; }
+    .dots span { display:inline-block; width:8px; height:8px; margin:0 3px; border-radius:50%; background:#fff; opacity:.4; animation:b 1s infinite; }
+    .dots span:nth-child(2) { animation-delay:.15s; } .dots span:nth-child(3) { animation-delay:.3s; }
+    @keyframes b { 50% { opacity:1; transform:translateY(-4px); } }
+    #msg { max-width:320px; text-align:center; font-size:14px; line-height:1.6; opacity:.95; padding:0 20px; }
+    #msg button { margin-top:12px; border:0; border-radius:999px; padding:9px 22px; font-size:15px; color:#4a2a8a; background:#fff; }
+  </style>
+  <script src="config.js"></script>
+</head>
+<body>
+  <div id="splash">
+    <img src="icons/icon-512.png" alt="">
+    <div class="t">Premium Lab · สรุปสำหรับผู้บริหาร</div>
+    <div class="dots"><span></span><span></span><span></span></div>
+    <div id="msg"></div>
+  </div>
+  <iframe id="app" title="Premium Lab ผู้บริหาร" allow="clipboard-write"></iframe>
+  <script>
+    const PIN_KEY = 'pexec_pin';
+    const msg = document.getElementById('msg');
+    function showMsg(html) { msg.innerHTML = html; document.querySelector('.dots').style.display = 'none'; }
+    function start() {
+      if (!navigator.onLine) { showMsg('ไม่มีอินเทอร์เน็ต<br>กรุณาเชื่อมต่อแล้วลองใหม่<br><button onclick="location.reload()">ลองใหม่</button>'); return; }
+      if (!window.EXEC_URL || /ใส่ลิงก์/.test(window.EXEC_URL)) { showMsg('ยังไม่ได้ใส่ลิงก์เว็บแอปในไฟล์ config.js'); return; }
+      const f = document.getElementById('app');
+      f.onload = () => { const s = document.getElementById('splash'); setTimeout(() => { s.style.opacity = 0; setTimeout(() => s.remove(), 400); }, 900); };
+      f.src = window.EXEC_URL;
+    }
+    // สะพานเก็บ PIN: หน้าเว็บใน iframe ขอ/ฝาก PIN ไว้ที่แอปนี้ (iPhone ไม่ให้ iframe จำค่าไว้ถาวร)
+    window.addEventListener('message', e => {
+      if (!/\.googleusercontent\.com$/.test(new URL(e.origin).hostname)) return;
+      const d = e.data || {};
+      try {
+        if (d.pexec === 'get') e.source.postMessage({ pexec: 'pin', pin: localStorage.getItem(PIN_KEY) || '' }, e.origin);
+        else if (d.pexec === 'save') d.pin ? localStorage.setItem(PIN_KEY, String(d.pin)) : localStorage.removeItem(PIN_KEY);
+      } catch (err) {}
+    });
+    window.addEventListener('online', () => { if (!document.getElementById('app').src) location.reload(); });
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+    start();
+  </script>
+</body>
+</html>
